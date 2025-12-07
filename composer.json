@@ -10,6 +10,6 @@
             "name": "Janis Feldmanis"
         }
     ],
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "require": {}
 }
