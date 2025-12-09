@@ -14,27 +14,36 @@ class ProductController extends Controller
         $client = new \GuzzleHttp\Client();
         $response = $client->get('http://products:8000/api/products');
         $products = json_decode($response->getBody()->getContents(), true);
+
         return view('products::index', compact('products'));
     }
 
     public function show($id, Request $request)
     {
-        $product = Product::find($id);
-        if (! $product) {
-            return response()->json(['message' => 'Product not found'], 404);
-        }
-
-        if ($request->wantsJson()) {
-            return response()->json($product);
-        }
-
+        $client = new \GuzzleHttp\Client();
+        $response = $client->get('http://products:8000/api/products/' . $id);
+        $product = json_decode($response->getBody()->getContents(), true);
         return view('products::show', compact('product'));
+    }
+
+    public function editView($id)
+    {
+        $client = new \GuzzleHttp\Client();
+        $response = $client->get('http://products:8000/api/products/' . $id);
+        $product = json_decode($response->getBody()->getContents(), true);
+        
+        return view('products::edit_view', compact('product'));
+    }
+
+    public function createView()
+    {
+        return view('products::create_view');
     }
 
     public function store(Request $request)
     {
+        
         $data = $request->only(['name', 'description', 'price', 'stock', 'is_active']);
-
         $rules = [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -44,21 +53,21 @@ class ProductController extends Controller
         ];
 
         $validator = Validator::make($data, $rules);
+        
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $product = Product::create($validator->validated());
-
-        return response()->json($product, 201);
+        $client = new \GuzzleHttp\Client();
+        $response = $client->post('http://products:8000/api/products', [
+            'form_params' => $data
+        ]);
+        
+        return redirect()->route('products.index');
     }
 
     public function update($id, Request $request)
     {
-        $product = Product::find($id);
-        if (! $product) {
-            return response()->json(['message' => 'Product not found'], 404);
-        }
 
         $data = $request->only(['name', 'description', 'price', 'stock', 'is_active']);
 
@@ -75,21 +84,47 @@ class ProductController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $product->fill($validator->validated());
-        $product->save();
+        $client = new \GuzzleHttp\Client();
+        $response = $client->put('http://products:8000/api/products/'. $id, [
+            'form_params' => $data
+        ]);
 
-        return response()->json($product);
+        return redirect()->route('products.show', ['id' => $id]);
     }
 
     public function destroy($id)
     {
-        $product = Product::find($id);
-        if (! $product) {
-            return response()->json(['message' => 'Product not found'], 404);
+        $client = new \GuzzleHttp\Client();
+        
+        $client->delete('http://products:8000/api/products/' . $id);
+
+        return redirect()->route('products.index');
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,csv',
+        ]);
+
+        $file = $request->file('file');
+
+        $client = new \GuzzleHttp\Client();
+        
+        try {
+            $client->post('http://products:8000/api/products/import', [
+                'multipart' => [
+                    [
+                        'name'     => 'file',
+                        'contents' => fopen($file->getPathname(), 'r'),
+                        'filename' => $file->getClientOriginalName(),
+                    ],
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->route('products.index')->with('error', 'Import failed.');
         }
 
-        $product->delete();
-
-        return response()->json(['message' => 'Product deleted']);
+        return redirect()->route('products.index');
     }
 }
