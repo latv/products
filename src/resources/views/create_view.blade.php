@@ -53,7 +53,7 @@
                                    id="is_active" 
                                    name="is_active" 
                                    value="1" >
-                            <label class="form-check-label" for="is_active">Is Active (Visible on site)</label>
+                            <label class="form-check-label" for="is_active">Is Active</label>
                         </div>
                         
                         <div class="d-flex justify-content-between pt-3">

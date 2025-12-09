@@ -59,7 +59,7 @@
                                    name="is_active" 
                                    value="1" 
                                    {{ old('is_active', $product['is_active']) ? 'checked' : '' }} >
-                            <label class="form-check-label" for="is_active">Is Active (Visible on site)</label>
+                            <label class="form-check-label" for="is_active">Is Active</label>
                         </div>
                         
                         <div class="d-flex justify-content-between pt-3">
